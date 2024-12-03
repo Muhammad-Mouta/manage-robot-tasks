@@ -1,7 +1,7 @@
 def manage_robot_tasks(
-    assignments: list[int],
-    max_assignments: dict[int, int],
-    cooldown: int = 3,
+    assignments: list,
+    max_assignments: dict,
+    cooldown=3,
 ) -> list[int]:
     """In a futuristic factory, a team of robots is responsible for various tasks,
        but each robot has specific limitations based on its previous assignments.
