@@ -114,7 +114,7 @@ class TestAssignmentsCases:
     @pytest.mark.parametrize(
         "assignments", [list(range(100)), list(range(123))]
     )
-    def raising_and_error_for_a_100_or_more_unique_robot_ids(assignments):
+    def test_raising_and_error_for_a_100_or_more_unique_robot_ids(assignments):
         """No more than a 100 unique robot IDs can exist in assignments."""
         with pytest.raises(ValueError) as err:
             manage_robot_tasks(
@@ -122,7 +122,7 @@ class TestAssignmentsCases:
                 {},
             )
         assert (
-            err
+            str(err.value)
             == "You cannot have more than a 100 unique robots assigned in the (assignments) list"
         )
 
