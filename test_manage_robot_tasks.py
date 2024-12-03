@@ -144,7 +144,7 @@ class TestMaxAssignmentsCases:
             [101],
             {101: 5, "101": 0, "_": 5, 202: 5, 101.101: 5},
             cooldown=0,
-            expected_result=[101],
+            expected_result=[101, 202],
         )
 
     @staticmethod
