@@ -6,9 +6,10 @@ from itertools import permutations
 from typing import Literal
 import pytest
 from manage_robot_tasks import (
-    RobotRecord,
     manage_robot_tasks,
 )
+
+MAX_UNIQUE_ROBOT_ID_MESSAGE = "You cannot have more than a 100 unique robots assigned in the (assignments) list"
 
 
 def assert_result(
@@ -112,17 +113,14 @@ class TestAssignmentsCases:
     @pytest.mark.parametrize(
         "assignments", [list(range(100)), list(range(123))]
     )
-    def test_raising_and_error_for_a_100_or_more_unique_robot_ids(assignments):
+    def test_raising_an_error_for_a_100_or_more_unique_robot_ids(assignments):
         """No more than a 100 unique robot IDs can exist in assignments."""
         with pytest.raises(ValueError) as err:
             manage_robot_tasks(
                 assignments,
                 {},
             )
-        assert (
-            str(err.value)
-            == "You cannot have more than a 100 unique robots assigned in the (assignments) list"
-        )
+        assert str(err.value) == MAX_UNIQUE_ROBOT_ID_MESSAGE
 
 
 class TestMaxAssignmentsCases:
@@ -541,20 +539,45 @@ class TestContextCases:
         assert context == expected_context
 
     @staticmethod
-    def test_passing_assignments_that_would_exceed_a_100_unique_robot_ids():
+    @pytest.mark.parametrize(
+        "robot_records",
+        [
+            {rid: (1, rid, rid) for rid in range(100)},
+            {rid: (1, rid, rid) for rid in range(123)},
+        ],
+    )
+    def test_raising_an_error_if_robot_records_exceed_100_items(robot_records):
         context = {
-            "robot_records": {rid: (1, rid, rid) for rid in range(99)},
+            "robot_records": robot_records,
+        }
+        with pytest.raises(ValueError) as err:
+            manage_robot_tasks([], {}, context=context)
+        assert str(err.value) == MAX_UNIQUE_ROBOT_ID_MESSAGE
+        assert context is context
+        assert context == context
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "robot_records, assignments",
+        [
+            ({rid: (1, rid, rid) for rid in range(99)}, [99]),
+            ({rid: (1, rid, rid) for rid in range(99)}, [99, 100, 101]),
+            ({rid: (1, rid, rid) for rid in range(97)}, [99, 100, 101]),
+        ],
+    )
+    def test_passing_assignments_that_would_exceed_a_100_unique_robot_ids(
+        robot_records, assignments
+    ):
+        context = {
+            "robot_records": robot_records,
         }
         with pytest.raises(ValueError) as err:
             manage_robot_tasks(
-                [99],
-                {rid: 5 for rid in range(100)},
+                assignments,
+                {rid: 5 for rid in range(123)},
                 context=context,
             )
-        assert (
-            str(err.value)
-            == "You cannot have more than a 100 unique robots assigned in the (assignments) list"
-        )
+        assert str(err.value) == MAX_UNIQUE_ROBOT_ID_MESSAGE
         assert context is context
         assert context == context
 

@@ -55,29 +55,55 @@ def manage_robot_tasks(
             maintaining the order of their original assignments.
     """
 
-    # Ensure the number of unique robot IDs in assignments is less than 100.
-    unique_robot_id_count = len(set(assignments))
+    # Read the context if given
+    if context is not None:
+        robot_records = {
+            robot_id: RobotRecord(*robot_record)
+            for robot_id, robot_record in (
+                context["robot_records"] if "robot_records" in context else {}
+            ).items()
+        }
+        prev_total_assignment_count = max(
+            sum(
+                robot_record.assignment_count
+                for _, robot_record in robot_records.items()
+            ),
+            (
+                context["total_assignment_count"]
+                if "total_assignment_count" in context
+                else 0
+            ),
+        )
+    else:
+        robot_records: dict[int, RobotRecord] = {}
+        prev_total_assignment_count = 0
+
+    # Ensure the number of unique robot IDs in (robot_records) and (assignments) is less than 100.
+    unique_robot_id_count = len(robot_records) + len(set(assignments))
     if unique_robot_id_count >= MAX_UNIQUE_ROBOT_ID_COUNT:
         raise ValueError(
             "You cannot have more than a 100 unique robots assigned in the (assignments) list"
         )
 
-    # Iterate through (assignments) and form robot_records
-    robot_records: dict[int, RobotRecord] = {}
+    # Iterate through (assignments) and update robot_records
     for i, robot_id in enumerate(assignments):
         if is_positive_int(robot_id):
+            actual_index = prev_total_assignment_count + i
             if robot_id in robot_records:
                 robot_record = robot_records[robot_id]
                 robot_records[robot_id] = RobotRecord(
                     robot_record.assignment_count + 1,
                     robot_record.first_assignment_index,
-                    i,
+                    actual_index,
                 )
             else:
-                robot_records[robot_id] = RobotRecord(1, i, i)
+                robot_records[robot_id] = RobotRecord(
+                    1, actual_index, actual_index
+                )
 
     # Iterate through (max_assignments) items, extract extra_robot_ids, and form the result
-    min_cooldown_index = len(assignments) - (
+    total_assignment_count = prev_total_assignment_count + len(assignments)
+    min_cooldown_index = total_assignment_count - (
         cooldown if is_positive_int(cooldown) else DEFAULT_COOLDOWN
     )
     extra_robot_ids = []
@@ -94,12 +120,17 @@ def manage_robot_tasks(
             else:
                 extra_robot_ids.append(robot_id)
 
-    # Sort (result) based on each robot ID's first occurrence in (assignments).
+    # Sort (result) based on each robot first_assignment_index
     # Also, extend it with (extra_robot_ids) if (unique_robot_id_count) permits it.
     result.sort(
         key=lambda robot_id: robot_records[robot_id].first_assignment_index
     )
     if unique_robot_id_count < MAX_UNIQUE_ROBOT_ID_COUNT - 1:
         result.extend(extra_robot_ids)
+
+    # Update the context if given
+    if context is not None:
+        context["robot_records"] = robot_records
+        context["total_assignment_count"] = total_assignment_count
 
     return result
