@@ -41,7 +41,7 @@ def manage_robot_tasks(
             A dictionary defining maximum allowable assignments per robot.
         cooldown (optional):
             An integer representing the number of subsequent tasks a robot cannot be assigned
-            after taking on a new task. Defaults to 3.
+            after taking on a new task. Defaults to DEFAULT_COOLDOWN.
         context (None | Context):
             If provided, it is used in calculations and is updated in place with the new context.
             It is useful for caching the context between function calls to avoid recalculations.
@@ -55,10 +55,26 @@ def manage_robot_tasks(
             maintaining the order of their original assignments.
     """
 
+    # Ensure the number of unique robot IDs in
+    # (context["robot_records"]) and (assignments) is less than MAX_UNIQUE_ROBOT_ID_COUNT.
+    unique_robot_id_count = len(set(assignments)) + (
+        len(context["robot_records"])
+        if context and "robot_records" in context
+        else 0
+    )
+    if unique_robot_id_count >= MAX_UNIQUE_ROBOT_ID_COUNT:
+        raise ValueError(
+            "You cannot have more than a 100 unique robots assigned in the (assignments) list"
+        )
+
     # Read the context if given
-    if context is not None:
+    if context:
         robot_records = {
-            robot_id: RobotRecord(*robot_record)
+            robot_id: (
+                robot_record
+                if isinstance(robot_record, RobotRecord)
+                else RobotRecord(*robot_record)
+            )
             for robot_id, robot_record in (
                 context["robot_records"] if "robot_records" in context else {}
             ).items()
@@ -76,14 +92,7 @@ def manage_robot_tasks(
         )
     else:
         robot_records: dict[int, RobotRecord] = {}
-        prev_total_assignment_count = 0
-
-    # Ensure the number of unique robot IDs in (robot_records) and (assignments) is less than 100.
-    unique_robot_id_count = len(robot_records) + len(set(assignments))
-    if unique_robot_id_count >= MAX_UNIQUE_ROBOT_ID_COUNT:
-        raise ValueError(
-            "You cannot have more than a 100 unique robots assigned in the (assignments) list"
-        )
+        prev_total_assignment_count: int = 0
 
     # Iterate through (assignments) and update robot_records
     for i, robot_id in enumerate(assignments):
