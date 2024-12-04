@@ -41,9 +41,12 @@ def manage_robot_tasks(
             "You cannot have more than a 100 unique robots assigned in the (assignments) list"
         )
 
-    # Count the number of tasks each robot has taken on
-    # and store the index of its first occurrence
+    # Count the number of assignments for each robot
+    # Store the index of each robot first occurrence in (assignments)
+    # And extract the robots on cooldown
     robot_task_counts = {}
+    cooldown = cooldown if is_positive_int(cooldown) else DEFAULT_COOLDOWN
+    robots_on_cooldown = set()
     for i, robot_id in enumerate(assignments):
         if is_positive_int(robot_id):
             if robot_id in robot_task_counts:
@@ -51,14 +54,10 @@ def manage_robot_tasks(
                 robot_task_counts[robot_id] = (first_occ, count + 1)
             else:
                 robot_task_counts[robot_id] = (i, 1)
+        if len(assignments) - i <= cooldown:
+            robots_on_cooldown.add(robot_id)
 
-    # Set the cooldown value and extract the robots on cooldown
-    cooldown = cooldown if is_positive_int(cooldown) else DEFAULT_COOLDOWN
-    robots_on_cooldown = set()
-    for i in range(1, min(len(assignments), cooldown) + 1):
-        robots_on_cooldown.add(assignments[-i])
-
-    # Iterate through max_assignments items, form the result, and extract the extra robot IDs
+    # Iterate through (max_assignments) items, form the result, and extract the extra robot IDs
     result = []
     extra_robot_ids = []
     for robot_id, limit in max_assignments.items():
@@ -70,10 +69,10 @@ def manage_robot_tasks(
             else:
                 extra_robot_ids.append(robot_id)
 
-    # Sort the result based on each robot ID's first occurrence in the assignments
-    # Also, append the extra robot_ids to the result if no_unique_robot_ids permits it
-    return sorted(result, key=lambda rid: robot_task_counts[rid][0]) + (
-        extra_robot_ids
-        if no_unique_robot_ids < MAX_UNIQUE_ROBOT_IDS - 1
-        else []
-    )
+    # Sort (result) based on each robot ID's first occurrence in (assignments)
+    # Also, extend it with (extra_robot_ids) if (no_unique_robot_ids) permits it
+    result.sort(key=lambda rid: robot_task_counts[rid][0])
+    if no_unique_robot_ids < MAX_UNIQUE_ROBOT_IDS - 1:
+        result.extend(extra_robot_ids)
+
+    return result
