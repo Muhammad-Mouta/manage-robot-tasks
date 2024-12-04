@@ -1,5 +1,6 @@
 # pylint: skip-file
 
+from itertools import permutations
 import pytest
 from manage_robot_tasks import (
     manage_robot_tasks,
@@ -71,12 +72,7 @@ class TestAssignmentsCases:
             [],
             {101: 2, 202: 2, 303: 3, 404: 0},
             expected_results=[
-                [101, 202, 303],
-                [101, 303, 202],
-                [202, 101, 303],
-                [202, 303, 101],
-                [303, 101, 202],
-                [303, 202, 101],
+                list(perm) for perm in permutations([101, 202, 303])
             ],
         )
 
@@ -184,12 +180,8 @@ class TestMaxAssignmentsCases:
             {101: 3, 202: 3, 303: 3, 404: 1, 505: 1, 606: 1, 707: 3, 808: 3},
             cooldown=2,
             expected_results=[
-                [101, 202, 606, 707, 808],
-                [101, 202, 606, 808, 707],
-                [101, 202, 707, 606, 808],
-                [101, 202, 707, 808, 606],
-                [101, 202, 808, 606, 707],
-                [101, 202, 808, 707, 606],
+                [101, 202] + list(perm)
+                for perm in permutations([606, 707, 808])
             ],
         )
 
@@ -201,6 +193,18 @@ class TestMaxAssignmentsCases:
             {rid: 5 for rid in range(123)},
             cooldown=1000,
             expected_result=[],
+        )
+
+    @staticmethod
+    def test_extra_max_assignments_robot_ids_3():
+        """cooldown is 1000, so every robot that has been assigned before is on cooldown. However, since 99 unique robot IDs (0~99) exist in assignments, extra robot IDs in max_assignments are ignored."""
+        assert_result_in(
+            list(range(98)),
+            {rid: 5 for rid in range(101)},
+            cooldown=1000,
+            expected_results=[
+                list(perm) for perm in permutations(range(98, 101))
+            ],
         )
 
 
@@ -243,4 +247,115 @@ class TestCooldownCases:
             {101: 2, 202: 2, 303: 2, 404: 2},
             cooldown=cooldown,
             expected_result=expected_result,
+        )
+
+
+class TestRandomCases:
+    @staticmethod
+    def test_case_1():
+        assert_result(
+            [101, 202, 303, 101, 404, 505, 505, 202, 303, 101, 707, 808, 909],
+            {
+                101: 5,
+                202: 2,
+                303: 2,
+                404: 4,
+                505: 1,
+                606: 2,
+                707: 3,
+                808: 5,
+                909: 1,
+            },
+            cooldown=3,
+            expected_result=[101, 404, 606],
+        )
+
+    @staticmethod
+    def test_case_2():
+        assert_result(
+            [101, 102, 303, "X", "_", 202, 404, 303, 808, 909, 505],
+            {
+                101: 3,
+                102: 0,
+                202: -1,
+                303: 2,
+                "404": 1,
+                505: 1,
+                808: 4,
+                909: 2,
+                606: 3,
+            },
+            cooldown=2,
+            expected_result=[101, 808, 606],
+        )
+
+    @staticmethod
+    def test_case_3():
+        assert_result_in(
+            [101, 202, 303, 101, 202, 303, 101, 202, 303],
+            {
+                101: 5,
+                202: 3,
+                303: 2,
+                404: 4,
+                505: 1,
+                606: 3,
+                707: 4,
+            },
+            cooldown=0,
+            expected_results=[
+                [101] + list(perm)
+                for perm in permutations([404, 505, 606, 707])
+            ],
+        )
+
+    @staticmethod
+    def test_case_4():
+        assert_result(
+            [101, 101, 202, 202, 303, 303, 404, 404, 505, 505],
+            {
+                101: 1,
+                202: 2,
+                303: 2,
+                404: 2,
+                505: 2,
+                606: 5,
+            },
+            cooldown=3,
+            expected_result=[606],
+        )
+
+    @staticmethod
+    def test_case_5():
+        assert_result(
+            [
+                101,
+                202,
+                303,
+                404,
+                505,
+                606,
+                707,
+                808,
+                909,
+                101,
+                202,
+                303,
+                404,
+                505,
+                606,
+            ],
+            {
+                101: 10,
+                202: 5,
+                303: 3,
+                404: 7,
+                505: 4,
+                606: 8,
+                707: 6,
+                808: 9,
+                909: 2,
+            },
+            cooldown=6,
+            expected_result=[707, 808, 909],
         )
