@@ -5,7 +5,7 @@ def is_positive_int(value, nonzero=False) -> bool:
     """Checks if (value) is a positive integer.
 
     Args:
-        value: The value to c`heck
+        value: The value to check
         nonzero (bool, optional):
             If True, the function returns False if (value == 0). Defaults to False.
 

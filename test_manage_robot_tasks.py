@@ -3,8 +3,10 @@
 """This module contains tests for the manage_robot_tasks functions"""
 
 from itertools import permutations
+from typing import Literal
 import pytest
 from manage_robot_tasks import (
+    RobotRecord,
     manage_robot_tasks,
 )
 
@@ -15,11 +17,10 @@ def assert_result(
     *,
     expected_result: list[int],
     cooldown=3,
+    context=None,
 ):
     result = manage_robot_tasks(
-        assignments,
-        max_assignments,
-        cooldown,
+        assignments, max_assignments, cooldown, context
     )
     assert result == expected_result
 
@@ -30,11 +31,10 @@ def assert_result_in(
     *,
     expected_results: list[list[int]],
     cooldown=3,
+    context=None,
 ):
     result = manage_robot_tasks(
-        assignments,
-        max_assignments,
-        cooldown,
+        assignments, max_assignments, cooldown, context
     )
     assert any([result == expected for expected in expected_results])
 
@@ -252,6 +252,356 @@ class TestCooldownCases:
         )
 
 
+class TestContextCases:
+    @staticmethod
+    def test_not_passing_a_context():
+        """No context passed, so the function works normally"""
+        assert manage_robot_tasks(
+            [101, 202, 303, 404, 505],
+            {101: 2, 202: 1, 303: 2, 404: 2},
+        ) == [101]
+
+    @staticmethod
+    def test_passing_none_as_context():
+        """Context is None, which has no effect on the function result nor the context passed"""
+        context = None
+        assert manage_robot_tasks(
+            [101, 202, 303, 404, 505],
+            {101: 2, 202: 1, 303: 2, 404: 2},
+            context=context,
+        ) == [101]
+        assert context is context
+
+    @staticmethod
+    def test_passing_empty_context():
+        """An empty context dict is passed, so, there is no effect on the function result. However, the passed context is updated."""
+        context = {}
+        manage_robot_tasks(
+            [101, 202, 303, 404, 505, 202],
+            {101: 2, 202: 2, 303: 1, 404: 2, 505: 2},
+            context=context,
+        )
+        assert context is context
+        assert context == {
+            "robot_records": {
+                101: (1, 0, 0),
+                202: (2, 1, 5),
+                303: (1, 2, 2),
+                404: (1, 3, 3),
+                505: (1, 4, 4),
+            },
+            "total_assignment_count": 6,
+        }
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "assignments, expected_context",
+        [
+            (
+                [],
+                {
+                    "robot_records": {
+                        101: (1, 0, 0),
+                        202: (2, 1, 5),
+                        303: (1, 2, 2),
+                        404: (1, 3, 3),
+                        505: (1, 4, 4),
+                    },
+                    "total_assignment_count": 6,
+                },
+            ),
+            (
+                ["_", 404],
+                {
+                    "robot_records": {
+                        101: (1, 0, 0),
+                        202: (2, 1, 5),
+                        303: (1, 2, 2),
+                        404: (2, 3, 7),
+                        505: (1, 4, 4),
+                    },
+                    "total_assignment_count": 8,
+                },
+            ),
+        ],
+    )
+    def test_passing_robot_records_only(assignments, expected_context):
+        """Since total_assignment_count is missing, it is calculated as the sum of robot assignment counts + len(assignments)."""
+        context = {
+            "robot_records": {
+                101: (1, 0, 0),
+                202: (2, 1, 5),
+                303: (1, 2, 2),
+                404: (1, 3, 3),
+                505: (1, 4, 4),
+            }
+        }
+        manage_robot_tasks(
+            assignments,
+            {101: 2, 202: 2, 303: 1, 404: 2, 505: 2},
+            context=context,
+        )
+        assert context is context
+        assert context == expected_context
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "assignments, expected_context",
+        [
+            (
+                [],
+                {
+                    "robot_records": {},
+                    "total_assignment_count": 6,
+                },
+            ),
+            (
+                ["_", 404],
+                {
+                    "robot_records": {
+                        404: (1, 7, 7),
+                    },
+                    "total_assignment_count": 8,
+                },
+            ),
+        ],
+    )
+    def test_passing_total_assignment_count_only(
+        assignments, expected_context
+    ):
+        """Since robot_records are missing, it is assumed that all assignments are invalid so far and that robot_records is an empty dict. The total_assignment_count is used normally."""
+        context = {
+            "total_assignment_count": 6,
+        }
+        manage_robot_tasks(
+            assignments,
+            {101: 2, 202: 2, 303: 1, 404: 2, 505: 2},
+            context=context,
+        )
+        assert context is context
+        assert context == expected_context
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "assignments, expected_context",
+        [
+            (
+                [],
+                {
+                    "robot_records": {
+                        101: (1, 0, 0),
+                        202: (2, 1, 5),
+                        303: (1, 2, 2),
+                        404: (1, 3, 3),
+                        505: (1, 4, 4),
+                    },
+                    "total_assignment_count": 6,
+                },
+            ),
+            (
+                ["_", 404],
+                {
+                    "robot_records": {
+                        101: (1, 0, 0),
+                        202: (2, 1, 5),
+                        303: (1, 2, 2),
+                        404: (2, 3, 7),
+                        505: (1, 4, 4),
+                    },
+                    "total_assignment_count": 8,
+                },
+            ),
+        ],
+    )
+    def test_passing_complete_context(assignments, expected_context):
+        context = {
+            "robot_records": {
+                101: (1, 0, 0),
+                202: (2, 1, 5),
+                303: (1, 2, 2),
+                404: (1, 3, 3),
+                505: (1, 4, 4),
+            },
+            "total_assignment_count": 6,
+        }
+        manage_robot_tasks(
+            assignments,
+            {101: 2, 202: 2, 303: 1, 404: 2, 505: 2},
+            context=context,
+        )
+        assert context is context
+        assert context == expected_context
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "assignments, expected_context",
+        [
+            (
+                [],
+                {
+                    "robot_records": {
+                        101: (1, 0, 0),
+                        202: (2, 1, 5),
+                        303: (1, 2, 2),
+                        404: (1, 3, 3),
+                        505: (1, 4, 4),
+                    },
+                    "total_assignment_count": 6,
+                },
+            ),
+            (
+                ["_", 404],
+                {
+                    "robot_records": {
+                        101: (1, 0, 0),
+                        202: (2, 1, 5),
+                        303: (1, 2, 2),
+                        404: (2, 3, 7),
+                        505: (1, 4, 4),
+                    },
+                    "total_assignment_count": 8,
+                },
+            ),
+        ],
+    )
+    def test_passing_total_assignment_count_less_than_the_sum_of_robot_assignment_counts(
+        assignments, expected_context
+    ):
+        """In this case, the total_assignment_count is pumped up to match the sum of robot_assignment_counts. This ensures consistency along the robot_records."""
+        context = {
+            "robot_records": {
+                101: (1, 0, 0),
+                202: (2, 1, 5),
+                303: (1, 2, 2),
+                404: (1, 3, 3),
+                505: (1, 4, 4),
+            },
+            "total_assignment_count": 3,
+        }
+        manage_robot_tasks(
+            assignments,
+            {101: 2, 202: 2, 303: 1, 404: 2, 505: 2},
+            context=context,
+        )
+        assert context is context
+        assert context == expected_context
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "assignments, expected_context",
+        [
+            (
+                [],
+                {
+                    "robot_records": {
+                        101: (1, 0, 0),
+                        202: (2, 1, 5),
+                        303: (1, 2, 2),
+                        404: (1, 3, 3),
+                        505: (1, 4, 4),
+                    },
+                    "total_assignment_count": 9,
+                },
+            ),
+            (
+                ["_", 404],
+                {
+                    "robot_records": {
+                        101: (1, 0, 0),
+                        202: (2, 1, 5),
+                        303: (1, 2, 2),
+                        404: (2, 3, 10),
+                        505: (1, 4, 4),
+                    },
+                    "total_assignment_count": 11,
+                },
+            ),
+        ],
+    )
+    def test_passing_total_assignment_count_more_than_the_sum_of_robot_assignment_counts(
+        assignments, expected_context
+    ):
+        """In this case, the total_assignment_count is treated normally."""
+        context = {
+            "robot_records": {
+                101: (1, 0, 0),
+                202: (2, 1, 5),
+                303: (1, 2, 2),
+                404: (1, 3, 3),
+                505: (1, 4, 4),
+            },
+            "total_assignment_count": 9,
+        }
+        manage_robot_tasks(
+            assignments,
+            {101: 2, 202: 2, 303: 1, 404: 2, 505: 2},
+            context=context,
+        )
+        assert context is context
+        assert context == expected_context
+
+    @staticmethod
+    def test_passing_assignments_that_would_exceed_a_100_unique_robot_ids():
+        context = {
+            "robot_records": {rid: (1, rid, rid) for rid in range(99)},
+        }
+        with pytest.raises(ValueError) as err:
+            manage_robot_tasks(
+                [99],
+                {rid: 5 for rid in range(100)},
+                context=context,
+            )
+        assert (
+            str(err.value)
+            == "You cannot have more than a 100 unique robots assigned in the (assignments) list"
+        )
+        assert context is context
+        assert context == context
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "cooldown, expected_result", [(4, [101]), (5, []), (6, [])]
+    )
+    def test_increasing_cooldown_given_context(cooldown, expected_result):
+        context = {}
+        manage_robot_tasks(
+            [101, 202, 303, 404, 505],
+            {101: 2, 202: 2, 303: 1, 404: 2, 505: 2},
+            context=context,
+        )
+        assert (
+            manage_robot_tasks(
+                [],
+                {101: 2, 202: 2, 303: 1, 404: 2, 505: 2},
+                context=context,
+                cooldown=cooldown,
+            )
+            == expected_result
+        )
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "cooldown, expected_result",
+        [(2, [101, 404]), (1, [101, 404, 505]), (0, [101, 404, 505])],
+    )
+    def test_decreasing_cooldown_given_context(cooldown, expected_result):
+        context = {}
+        manage_robot_tasks(
+            [101, 202, 303, 404, 505, 202],
+            {101: 2, 202: 2, 303: 1, 404: 2, 505: 2},
+            context=context,
+        )
+        assert (
+            manage_robot_tasks(
+                [],
+                {101: 2, 202: 2, 303: 1, 404: 2, 505: 2},
+                context=context,
+                cooldown=cooldown,
+            )
+            == expected_result
+        )
+
+
 class TestRandomCases:
     @staticmethod
     def test_case_1():
@@ -361,3 +711,127 @@ class TestRandomCases:
             cooldown=6,
             expected_result=[707, 808, 909],
         )
+
+    @staticmethod
+    def test_case_6():
+        assignments = [
+            101,
+            202,
+            303,
+            404,
+            505,
+            606,
+            707,
+            808,
+            909,
+            101,
+            202,
+            303,
+            404,
+            505,
+            606,
+            707,
+            808,
+            909,
+            101,
+            202,
+            303,
+            404,
+            505,
+            606,
+            707,
+            808,
+            909,
+            101,
+            202,
+            303,
+            "INVALID",
+            404,
+            505,
+            "_",
+            606,
+            707,
+            808,
+            909,
+            "INVALID",
+            "N/A",
+            101,
+            202,
+            303,
+            404,
+            505,
+            606,
+            "X",
+            707,
+            808,
+            909,
+            101,
+            202,
+            303,
+            404,
+            None,
+            505,
+            606,
+            707,
+            808,
+            909,
+            101,
+            "INVALID",
+            303,
+            404,
+            505,
+            606,
+            707,
+            808,
+            "BAD_KEY",
+            909,
+            101,
+            202,
+            "INVALID",
+            404,
+            "?",
+            606,
+            707,
+            "INVALID",
+            808,
+            909,
+            101,
+            202,
+            303,
+            404,
+            505,
+            606,
+            "###",
+            707,
+            808,
+            909,
+        ]
+        max_assignments = {
+            101: 5,
+            202: 3,
+            303: 15,
+            404: 6,
+            505: 11,
+            606: 7,
+            707: 8,
+            808: 2,
+            909: 10,
+            111: 3,
+            112: 4,
+            114: 2,
+            "INVALID_KEY": 5,
+            116: -1,
+            117: 0,
+            "": 5,
+        }
+        context = {}
+        for i in range(0, len(assignments), 10):
+            result = manage_robot_tasks(
+                assignments[i : i + 10],
+                max_assignments,
+                cooldown=5,
+                context=context,
+            )
+        assert result in [
+            [303, 505] + list(perm) for perm in permutations([111, 112, 114])
+        ]
