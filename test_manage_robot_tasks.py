@@ -1,5 +1,7 @@
 # pylint: skip-file
 
+"""This module contains tests for the manage_robot_tasks functions"""
+
 from itertools import permutations
 import pytest
 from manage_robot_tasks import (

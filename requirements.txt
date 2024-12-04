@@ -1,0 +1,2 @@
+# For testing
+pytest==8.3.3

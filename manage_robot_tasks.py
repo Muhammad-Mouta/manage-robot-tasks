@@ -1,3 +1,9 @@
+"""
+    In a futuristic factory, a team of robots is responsible for various tasks, 
+    but each robot has specific limitations based on its previous assignments. 
+    This module manages these limitations while considering that tasks can arrive dynamically.
+"""
+
 from utils import is_positive_int
 
 
