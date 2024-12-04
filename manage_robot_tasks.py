@@ -47,7 +47,7 @@ def manage_robot_tasks(
             It is useful for caching the context between function calls to avoid recalculations.
             It can have the following items:
                 - robot_records (dict[int, RobotRecord]):
-                    A dict holding records that describe previous tasks of a robot.
+                    Holds records that describe previous tasks of a robot.
                 - total_assignment_count (int): The total number of assignments so far.
     Returns:
         list[int]:
@@ -57,11 +57,13 @@ def manage_robot_tasks(
 
     # Ensure the number of unique robot IDs in
     # (context["robot_records"]) and (assignments) is less than MAX_UNIQUE_ROBOT_ID_COUNT.
-    unique_robot_id_count = len(set(assignments)) + (
-        len(context["robot_records"])
-        if context and "robot_records" in context
-        else 0
-    )
+    if context and "robot_records" in context:
+        unique_robot_id_count = len(context["robot_records"]) + sum(
+            0 if robot_id in context["robot_records"] else 1
+            for robot_id in set(assignments)
+        )
+    else:
+        unique_robot_id_count = len(set(assignments))
     if unique_robot_id_count >= MAX_UNIQUE_ROBOT_ID_COUNT:
         raise ValueError(
             "You cannot have more than a 100 unique robots assigned in the (assignments) list"

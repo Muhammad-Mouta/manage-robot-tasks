@@ -520,7 +520,7 @@ class TestContextCases:
             ({rid: (1, rid, rid) for rid in range(97)}, [99, 100, 101]),
         ],
     )
-    def test_passing_assignments_that_would_exceed_a_100_unique_robot_ids(
+    def test_passing_assignments_that_would_exceed_the_100_unique_robot_ids(
         robot_records, assignments
     ):
         context = {
@@ -536,6 +536,26 @@ class TestContextCases:
         assert context == {
             "robot_records": robot_records,
         }
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "robot_records, assignments",
+        [
+            ({rid: (1, rid, rid) for rid in range(99)}, [55, 77]),
+            ({rid: (1, rid, rid) for rid in range(97)}, [99, 100]),
+        ],
+    )
+    def test_passing_assignments_that_would_not_exceed_the_100_unique_robot_ids(
+        robot_records, assignments
+    ):
+        context = {
+            "robot_records": robot_records,
+        }
+        manage_robot_tasks(
+            assignments,
+            {rid: 5 for rid in range(123)},
+            context=context,
+        )
 
     @staticmethod
     @pytest.mark.parametrize(
