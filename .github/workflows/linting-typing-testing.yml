@@ -22,6 +22,7 @@ jobs:
       run: |
         pylint $(git ls-files '*.py')
     - name: Static type checking the code with mypy
+      run: |
         mypy $(git ls-files '*.py')
     - name: Testing the code with pytest
       run: |
