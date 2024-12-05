@@ -3,7 +3,7 @@
     This module manages these limitations while considering that tasks can arrive dynamically.
 """
 
-from typing import NamedTuple, TypedDict
+from typing import NamedTuple, NotRequired, TypedDict
 from utils import is_positive_int
 
 
@@ -25,8 +25,8 @@ class RobotRecord(NamedTuple):
 class Context(TypedDict):
     """Represents the context that can be passed to manage_robot_tasks"""
 
-    robot_records: dict[int, RobotRecord]
-    total_assignment_count: int
+    robot_records: NotRequired[dict[int, RobotRecord]]
+    total_assignment_count: NotRequired[int]
 
 
 def manage_robot_tasks(  # pylint: disable=R0912,R0914
