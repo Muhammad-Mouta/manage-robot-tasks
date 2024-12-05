@@ -4,7 +4,7 @@
 """
 
 from typing import NamedTuple, NotRequired, TypedDict
-from utils import is_positive_int
+from utils import count_unique_elements, is_positive_int, map_dict_values
 
 
 MAX_UNIQUE_ROBOT_ID_COUNT = 100
@@ -64,12 +64,18 @@ def manage_robot_tasks(  # pylint: disable=R0912,R0914
     # Ensure the number of unique robot IDs in
     # (context["robot_records"]) and (assignments) is less than MAX_UNIQUE_ROBOT_ID_COUNT.
     if context and "robot_records" in context:
-        unique_robot_id_count = len(context["robot_records"]) + sum(
-            0 if robot_id in context["robot_records"] else 1
-            for robot_id in set(assignments)
+        unique_robot_id_count = len(
+            context["robot_records"]
+        ) + count_unique_elements(
+            assignments,
+            limit=MAX_UNIQUE_ROBOT_ID_COUNT - len(context["robot_records"]),
+            excluded=set(context["robot_records"]),
         )
+
     else:
-        unique_robot_id_count = len(set(assignments))
+        unique_robot_id_count = count_unique_elements(
+            assignments, limit=MAX_UNIQUE_ROBOT_ID_COUNT
+        )
     if unique_robot_id_count >= MAX_UNIQUE_ROBOT_ID_COUNT:
         raise ValueError(MAX_UNIQUE_ROBOT_ID_MESSAGE)
 
@@ -80,16 +86,14 @@ def manage_robot_tasks(  # pylint: disable=R0912,R0914
             if "max_assignments" in context
             else max_assignments
         )
-        robot_records = {
-            robot_id: (
+        robot_records = map_dict_values(
+            lambda robot_record: (
                 robot_record
                 if isinstance(robot_record, RobotRecord)
                 else RobotRecord(*robot_record)
-            )
-            for robot_id, robot_record in (
-                context["robot_records"] if "robot_records" in context else {}
-            ).items()
-        }
+            ),
+            context["robot_records"] if "robot_records" in context else {},
+        )
         prev_total_assignment_count = max(
             sum(
                 robot_record.assignment_count
