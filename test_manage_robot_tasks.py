@@ -1,6 +1,6 @@
 # pylint: skip-file
 
-"""This module contains tests for the manage_robot_tasks functions"""
+"""Contains tests for the manage_robot_tasks functions"""
 
 from itertools import permutations
 import pytest
@@ -8,7 +8,9 @@ from manage_robot_tasks import (
     manage_robot_tasks,
 )
 
-MAX_UNIQUE_ROBOT_ID_MESSAGE = "You cannot have more than a 100 unique robots assigned in the (assignments) list"
+MAX_UNIQUE_ROBOT_ID_MESSAGE = (
+    "The (assignments) list must have less than a 100 unique robot IDs"
+)
 
 
 class TestBasicCases:

@@ -9,6 +9,10 @@ from utils import is_positive_int
 
 MAX_UNIQUE_ROBOT_ID_COUNT = 100
 
+MAX_UNIQUE_ROBOT_ID_MESSAGE = (
+    "The (assignments) list must have less than a 100 unique robot IDs"
+)
+
 DEFAULT_COOLDOWN = 3
 
 
@@ -65,9 +69,7 @@ def manage_robot_tasks(  # pylint: disable=R0912,R0914
     else:
         unique_robot_id_count = len(set(assignments))
     if unique_robot_id_count >= MAX_UNIQUE_ROBOT_ID_COUNT:
-        raise ValueError(
-            "You cannot have more than a 100 unique robots assigned in the (assignments) list"
-        )
+        raise ValueError(MAX_UNIQUE_ROBOT_ID_MESSAGE)
 
     # Read the context if given
     if context:
