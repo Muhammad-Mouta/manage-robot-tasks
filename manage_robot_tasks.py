@@ -127,6 +127,9 @@ def manage_robot_tasks(  # pylint: disable=R0912,R0914
     min_cooldown_index = total_assignment_count - (
         cooldown if is_positive_int(cooldown) else DEFAULT_COOLDOWN
     )
+    can_assign_extra_robots = (
+        unique_robot_id_count < MAX_UNIQUE_ROBOT_ID_COUNT - 1
+    )
     extra_robot_ids: list[int] = []
     result: list[int] = []
     clean_max_assignments: dict[int, int] = {}
@@ -135,18 +138,19 @@ def manage_robot_tasks(  # pylint: disable=R0912,R0914
             if robot_id in robot_records:
                 robot_record = robot_records[robot_id]
                 if robot_record.assignment_count < limit:
-                    clean_max_assignments[robot_id] = limit
+                    if context is not None:
+                        clean_max_assignments[robot_id] = limit
                     if robot_record.last_assignment_index < min_cooldown_index:
                         result.append(robot_id)
-            else:
+            elif can_assign_extra_robots:
                 extra_robot_ids.append(robot_id)
 
     # Sort (result) based on each robot first_assignment_index
-    # Also, extend it with (extra_robot_ids) if (unique_robot_id_count) permits it.
+    # Also, extend it with (extra_robot_ids) if extra robots can be assigned.
     result.sort(
         key=lambda robot_id: robot_records[robot_id].first_assignment_index
     )
-    if unique_robot_id_count < MAX_UNIQUE_ROBOT_ID_COUNT - 1:
+    if can_assign_extra_robots:
         result.extend(extra_robot_ids)
         for extra_robot_id in extra_robot_ids:
             clean_max_assignments[extra_robot_id] = max_assignments[
