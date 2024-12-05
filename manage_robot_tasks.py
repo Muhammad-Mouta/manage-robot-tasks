@@ -27,7 +27,7 @@ class Context(TypedDict):
     total_assignment_count: int
 
 
-def manage_robot_tasks(
+def manage_robot_tasks(  # pylint: disable=R0912,R0914
     assignments: list,
     max_assignments: dict,
     cooldown=DEFAULT_COOLDOWN,
@@ -93,8 +93,8 @@ def manage_robot_tasks(
             ),
         )
     else:
-        robot_records: dict[int, RobotRecord] = {}
-        prev_total_assignment_count: int = 0
+        robot_records = {}
+        prev_total_assignment_count = 0
 
     # Iterate through (assignments) and update robot_records
     for i, robot_id in enumerate(assignments):
