@@ -1,4 +1,4 @@
-name: Pylint
+name: Linting_Typing_Testing
 
 on: [push]
 
