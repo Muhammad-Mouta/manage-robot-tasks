@@ -75,6 +75,11 @@ def manage_robot_tasks(  # pylint: disable=R0912,R0914
 
     # Read the context if given
     if context:
+        max_assignments = (
+            (context["max_assignments"] | max_assignments)
+            if "max_assignments" in context
+            else max_assignments
+        )
         robot_records = {
             robot_id: (
                 robot_record
@@ -116,22 +121,23 @@ def manage_robot_tasks(  # pylint: disable=R0912,R0914
                     1, actual_index, actual_index
                 )
 
-    # Iterate through (max_assignments) items, extract extra_robot_ids, and form the result
+    # Iterate through (max_assignments) items, extract extra_robot_ids, form the result,
+    # and the clean_max_assignments
     total_assignment_count = prev_total_assignment_count + len(assignments)
     min_cooldown_index = total_assignment_count - (
         cooldown if is_positive_int(cooldown) else DEFAULT_COOLDOWN
     )
-    extra_robot_ids = []
-    result = []
+    extra_robot_ids: list[int] = []
+    result: list[int] = []
+    clean_max_assignments: dict[int, int] = {}
     for robot_id, limit in max_assignments.items():
         if is_positive_int(robot_id) and is_positive_int(limit, nonzero=True):
             if robot_id in robot_records:
                 robot_record = robot_records[robot_id]
-                if (
-                    robot_record.assignment_count < limit
-                    and robot_record.last_assignment_index < min_cooldown_index
-                ):
-                    result.append(robot_id)
+                if robot_record.assignment_count < limit:
+                    clean_max_assignments[robot_id] = limit
+                    if robot_record.last_assignment_index < min_cooldown_index:
+                        result.append(robot_id)
             else:
                 extra_robot_ids.append(robot_id)
 
@@ -142,9 +148,14 @@ def manage_robot_tasks(  # pylint: disable=R0912,R0914
     )
     if unique_robot_id_count < MAX_UNIQUE_ROBOT_ID_COUNT - 1:
         result.extend(extra_robot_ids)
+        for extra_robot_id in extra_robot_ids:
+            clean_max_assignments[extra_robot_id] = max_assignments[
+                extra_robot_id
+            ]
 
     # Update the context if given
     if context is not None:
+        context["max_assignments"] = clean_max_assignments
         context["robot_records"] = robot_records
         context["total_assignment_count"] = total_assignment_count
 

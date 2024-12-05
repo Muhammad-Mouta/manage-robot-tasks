@@ -685,7 +685,7 @@ class TestContextCases:
                 101: 2,
                 202: 2,
                 404: 2,
-                101.0: 3,
+                101.01: 3,
                 "_": 4,
                 1.01: 5,
                 606: None,
@@ -694,7 +694,7 @@ class TestContextCases:
         }
         assert manage_robot_tasks(
             [101, 202, 303, 505, 404, 202, 505],
-            {202: 3.00, 505: 2, 101.0: 6, "_": 7, 1.01: 8, 606: 2, 707: None},
+            {202: 3.00, 505: 2, 101.01: 6, "_": 7, 1.01: 8, 606: 2, 707: None},
             context=context,
         ) == [101, 606]
         assert "max_assignments" in context and context["max_assignments"] == {
@@ -949,4 +949,4 @@ class TestRandomCases:
                 context=context,
             )
 
-        assert result == [93, 95, 97]
+        assert result == [93, 95]
