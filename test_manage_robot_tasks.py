@@ -212,6 +212,7 @@ class TestCooldownCases:
         )
 
 
+# TODO: Update the returned context to contain the (max_assignments)
 class TestContextCases:
     @staticmethod
     def test_not_passing_a_context():
@@ -242,6 +243,30 @@ class TestContextCases:
             context=context,
         )
         assert context == {
+            "max_assignments": {101: 2, 404: 2, 505: 2},
+            "robot_records": {
+                101: (1, 0, 0),
+                202: (2, 1, 5),
+                303: (1, 2, 2),
+                404: (1, 3, 3),
+                505: (1, 4, 4),
+            },
+            "total_assignment_count": 6,
+        }
+
+    @staticmethod
+    def test_passing_context_max_assignments_only():
+        """No previous assignments are assumed, so, the context max_assignments is used and robots that exceeded their limit are dropped in the updated context max_assignments"""
+        context = {
+            "max_assignments": {101: 2, 202: 2, 303: 1, 404: 2, 505: 2},
+        }
+        assert manage_robot_tasks(
+            [101, 202, 303, 404, 505, 202],
+            {},
+            context=context,
+        ) == [101]
+        assert context == {
+            "max_assignments": {101: 2, 404: 2, 505: 2},
             "robot_records": {
                 101: (1, 0, 0),
                 202: (2, 1, 5),
@@ -259,6 +284,11 @@ class TestContextCases:
             (
                 [],
                 {
+                    "max_assignments": {
+                        101: 2,
+                        404: 2,
+                        505: 2,
+                    },
                     "robot_records": {
                         101: (1, 0, 0),
                         202: (2, 1, 5),
@@ -272,6 +302,10 @@ class TestContextCases:
             (
                 ["_", 404],
                 {
+                    "max_assignments": {
+                        101: 2,
+                        505: 2,
+                    },
                     "robot_records": {
                         101: (1, 0, 0),
                         202: (2, 1, 5),
@@ -309,6 +343,13 @@ class TestContextCases:
             (
                 [],
                 {
+                    "max_assignments": {
+                        101: 2,
+                        202: 2,
+                        303: 1,
+                        404: 2,
+                        505: 2,
+                    },
                     "robot_records": {},
                     "total_assignment_count": 6,
                 },
@@ -316,6 +357,13 @@ class TestContextCases:
             (
                 ["_", 404],
                 {
+                    "max_assignments": {
+                        101: 2,
+                        202: 2,
+                        303: 1,
+                        404: 2,
+                        505: 2,
+                    },
                     "robot_records": {
                         404: (1, 7, 7),
                     },
@@ -327,7 +375,7 @@ class TestContextCases:
     def test_passing_total_assignment_count_only(
         assignments, expected_context
     ):
-        """Since robot_records are missing, it is assumed that all assignments are invalid so far and that robot_records is an empty dict. The total_assignment_count is used normally."""
+        """Since robot_records are missing, it is assumed that all assignments are invalid so far and that robot_records is an empty dict."""
         context = {
             "total_assignment_count": 6,
         }
@@ -345,6 +393,11 @@ class TestContextCases:
             (
                 [],
                 {
+                    "max_assignments": {
+                        101: 2,
+                        404: 2,
+                        505: 2,
+                    },
                     "robot_records": {
                         101: (1, 0, 0),
                         202: (2, 1, 5),
@@ -358,6 +411,10 @@ class TestContextCases:
             (
                 ["_", 404],
                 {
+                    "max_assignments": {
+                        101: 2,
+                        505: 2,
+                    },
                     "robot_records": {
                         101: (1, 0, 0),
                         202: (2, 1, 5),
@@ -372,6 +429,7 @@ class TestContextCases:
     )
     def test_passing_complete_context(assignments, expected_context):
         context = {
+            "max_assignments": {101: 2, 202: 2, 303: 1, 404: 2, 505: 2},
             "robot_records": {
                 101: (1, 0, 0),
                 202: (2, 1, 5),
@@ -383,7 +441,7 @@ class TestContextCases:
         }
         manage_robot_tasks(
             assignments,
-            {101: 2, 202: 2, 303: 1, 404: 2, 505: 2},
+            {},
             context=context,
         )
         assert context == expected_context
@@ -395,6 +453,7 @@ class TestContextCases:
             (
                 [],
                 {
+                    "max_assignments": {101: 2, 404: 2, 505: 2},
                     "robot_records": {
                         101: (1, 0, 0),
                         202: (2, 1, 5),
@@ -408,6 +467,7 @@ class TestContextCases:
             (
                 ["_", 404],
                 {
+                    "max_assignments": {101: 2, 505: 2},
                     "robot_records": {
                         101: (1, 0, 0),
                         202: (2, 1, 5),
@@ -448,6 +508,7 @@ class TestContextCases:
             (
                 [],
                 {
+                    "max_assignments": {101: 2, 404: 2, 505: 2},
                     "robot_records": {
                         101: (1, 0, 0),
                         202: (2, 1, 5),
@@ -461,6 +522,7 @@ class TestContextCases:
             (
                 ["_", 404],
                 {
+                    "max_assignments": {101: 2, 505: 2},
                     "robot_records": {
                         101: (1, 0, 0),
                         202: (2, 1, 5),
@@ -601,6 +663,45 @@ class TestContextCases:
             )
             == expected_result
         )
+
+    @staticmethod
+    def test_merging_parameter_and_context_max_assignments():
+        context = {"max_assignments": {101: 2, 202: 2, 404: 2}}
+        assert manage_robot_tasks(
+            [101, 202, 303, 505, 404, 202, 505],
+            {202: 2, 303: 1, 404: 1, 505: 3, 606: 2},
+            context=context,
+        ) == [101, 606]
+        assert "max_assignments" in context and context["max_assignments"] == {
+            101: 2,
+            505: 3,
+            606: 2,
+        }
+
+    @staticmethod
+    def test_cleaning_max_assignments():
+        context = {
+            "max_assignments": {
+                101: 2,
+                202: 2,
+                404: 2,
+                101.0: 3,
+                "_": 4,
+                1.01: 5,
+                606: None,
+                707: -5,
+            }
+        }
+        assert manage_robot_tasks(
+            [101, 202, 303, 505, 404, 202, 505],
+            {202: 3.00, 505: 2, 101.0: 6, "_": 7, 1.01: 8, 606: 2, 707: None},
+            context=context,
+        ) == [101, 606]
+        assert "max_assignments" in context and context["max_assignments"] == {
+            101: 2,
+            404: 2,
+            606: 2,
+        }
 
 
 class TestRandomCases:
@@ -830,3 +931,22 @@ class TestRandomCases:
         assert result in [
             [303, 505] + list(perm) for perm in permutations([111, 112, 114])
         ]
+
+    @staticmethod
+    def test_case_7():
+        assignments = []
+        max_assignments = {i: i + 1 for i in range(100)}
+        max_assignments[93] = max_assignments[95] = max_assignments[97] = 1000
+        for i in range(99):
+            assignments.extend([j for j in range(i, 99)])
+
+        context = {"max_assignments": max_assignments}
+
+        for i in range(0, len(assignments), 1000):
+            result = manage_robot_tasks(
+                assignments[i : i + 1000],
+                {},
+                context=context,
+            )
+
+        assert result == [93, 95, 97]

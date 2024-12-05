@@ -25,6 +25,7 @@ class RobotRecord(NamedTuple):
 class Context(TypedDict):
     """Represents the context that can be passed to manage_robot_tasks"""
 
+    max_assignments: NotRequired[dict[int, int]]
     robot_records: NotRequired[dict[int, RobotRecord]]
     total_assignment_count: NotRequired[int]
 
@@ -33,6 +34,7 @@ def manage_robot_tasks(  # pylint: disable=R0912,R0914
     assignments: list,
     max_assignments: dict,
     cooldown=DEFAULT_COOLDOWN,
+    *,
     context: None | Context = None,
 ) -> list[int]:
     """Manages robot limitations while considering that tasks can arrive dynamically.
@@ -48,6 +50,8 @@ def manage_robot_tasks(  # pylint: disable=R0912,R0914
             If provided, it is used in calculations and is updated in place with the new context.
             It is useful for caching the context between function calls to avoid recalculations.
             It can have the following items:
+                - max_assignments (dict[int, int]):
+                    Holds the maximum number of tasks that can be assigned for each robot.
                 - robot_records (dict[int, RobotRecord]):
                     Holds records that describe previous tasks of a robot.
                 - total_assignment_count (int): The total number of assignments so far.
