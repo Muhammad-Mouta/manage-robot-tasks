@@ -121,8 +121,8 @@ def manage_robot_tasks(  # pylint: disable=R0912,R0914
                     1, actual_index, actual_index
                 )
 
-    # Iterate through (max_assignments) items, extract extra_robot_ids, form the result,
-    # and the clean_max_assignments
+    # Iterate through (max_assignments) items, extract extra_robot_ids, and
+    # form the result and the clean_max_assignments
     total_assignment_count = prev_total_assignment_count + len(assignments)
     min_cooldown_index = total_assignment_count - (
         cooldown if is_positive_int(cooldown) else DEFAULT_COOLDOWN
