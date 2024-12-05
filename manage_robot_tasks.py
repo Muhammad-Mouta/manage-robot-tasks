@@ -9,9 +9,7 @@ from utils import is_positive_int
 
 MAX_UNIQUE_ROBOT_ID_COUNT = 100
 
-MAX_UNIQUE_ROBOT_ID_MESSAGE = (
-    "The (assignments) list must have less than a 100 unique robot IDs"
-)
+MAX_UNIQUE_ROBOT_ID_MESSAGE = f"The (assignments) list must have less than a {MAX_UNIQUE_ROBOT_ID_COUNT} unique robot IDs"  # pylint: disable=C0301
 
 DEFAULT_COOLDOWN = 3
 
